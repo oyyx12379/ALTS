@@ -1,4 +1,4 @@
-##ALTS / WIT
+## ALTS / WIT
 
 ALTS（ARKLINK Terminal Service）是一个面向《行于泰拉》TRPG 的在线跑团辅助平台。项目将角色卡、规则资料、地图编辑、实时房间、战术棋盘、掷骰、聊天与音乐控制整合在一个终端风格的 Web 界面中，适合线上或线下辅助跑团使用。
 
