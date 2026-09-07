@@ -1,0 +1,906 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PRTS 鼠标跟随方案</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #050707;
+        --surface: rgba(10, 14, 14, 0.88);
+        --surface-2: rgba(18, 25, 24, 0.72);
+        --line: rgba(137, 199, 189, 0.2);
+        --line-strong: rgba(128, 230, 213, 0.62);
+        --text: #edf4f0;
+        --muted: #81918c;
+        --dim: #53625e;
+        --cyan: #80e6d5;
+        --amber: #eba448;
+        --red: #e35b4b;
+        --green: #96d487;
+        --shadow: 0 22px 70px rgba(0, 0, 0, 0.48);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", "Microsoft YaHei", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        color: var(--text);
+        background:
+          linear-gradient(rgba(128, 230, 213, 0.025) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(128, 230, 213, 0.02) 1px, transparent 1px),
+          radial-gradient(circle at 18% 8%, rgba(128, 230, 213, 0.09), transparent 30rem),
+          radial-gradient(circle at 82% 78%, rgba(235, 164, 72, 0.08), transparent 28rem),
+          var(--bg);
+        background-size: 34px 34px, 34px 34px, auto, auto, auto;
+        overflow-x: hidden;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background:
+          repeating-linear-gradient(
+            0deg,
+            transparent 0,
+            transparent 4px,
+            rgba(255, 255, 255, 0.026) 5px
+          ),
+          radial-gradient(circle at center, transparent 56%, rgba(0, 0, 0, 0.42));
+        opacity: 0.36;
+      }
+
+      button {
+        min-height: 34px;
+        border: 1px solid rgba(128, 230, 213, 0.28);
+        border-radius: 2px;
+        color: var(--text);
+        background:
+          linear-gradient(180deg, rgba(128, 230, 213, 0.12), rgba(128, 230, 213, 0.035)),
+          rgba(7, 10, 10, 0.92);
+        padding: 0 12px;
+        font: inherit;
+        font-size: 12px;
+        font-weight: 850;
+        cursor: pointer;
+        transition:
+          transform 140ms ease,
+          border-color 140ms ease,
+          box-shadow 140ms ease,
+          background 140ms ease;
+      }
+
+      button:hover {
+        transform: translateY(-1px);
+        border-color: rgba(128, 230, 213, 0.78);
+        box-shadow: 0 0 0 1px rgba(128, 230, 213, 0.14), 0 12px 26px rgba(0, 0, 0, 0.34);
+      }
+
+      button.active {
+        color: #071010;
+        border-color: rgba(128, 230, 213, 0.92);
+        background: linear-gradient(180deg, #91f2e3, #65c9bc);
+      }
+
+      .shell {
+        width: min(1280px, calc(100vw - 28px));
+        margin: 0 auto;
+        padding: 16px 0 34px;
+      }
+
+      .topbar {
+        display: grid;
+        grid-template-columns: 84px 1fr 300px;
+        min-height: 110px;
+        border: 1px solid var(--line);
+        background: rgba(6, 8, 8, 0.78);
+        box-shadow: var(--shadow);
+      }
+
+      .mark {
+        position: relative;
+        display: grid;
+        place-items: center;
+        border-right: 1px solid var(--line);
+        overflow: hidden;
+      }
+
+      .mark::before,
+      .mark::after {
+        content: "";
+        position: absolute;
+        width: 40px;
+        height: 40px;
+        border: 1px solid var(--line-strong);
+        transform: rotate(45deg);
+      }
+
+      .mark::after {
+        width: 22px;
+        height: 22px;
+        border-color: var(--amber);
+        animation: markSpin 8s linear infinite;
+      }
+
+      .mark span {
+        z-index: 1;
+        color: var(--amber);
+        font-size: 13px;
+        font-weight: 950;
+      }
+
+      .headline {
+        padding: 15px 18px;
+      }
+
+      .headline small {
+        display: block;
+        color: var(--cyan);
+        font-family: "Cascadia Mono", Consolas, monospace;
+        font-size: 11px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 8px 0 6px;
+        font-size: clamp(30px, 4.7vw, 58px);
+        line-height: 0.96;
+        letter-spacing: 0;
+      }
+
+      .headline p {
+        max-width: 780px;
+        margin: 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.65;
+      }
+
+      .status {
+        border-left: 1px solid var(--line);
+        font-family: "Cascadia Mono", Consolas, monospace;
+        font-size: 11px;
+      }
+
+      .status-row {
+        display: grid;
+        grid-template-columns: 104px 1fr;
+        gap: 12px;
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--line);
+        color: var(--muted);
+      }
+
+      .status-row:last-child {
+        border-bottom: 0;
+      }
+
+      .status-row strong {
+        color: var(--text);
+      }
+
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 14px 0;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 320px;
+        gap: 14px;
+      }
+
+      .stage-card,
+      .side-card {
+        border: 1px solid var(--line);
+        background:
+          linear-gradient(145deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.006)),
+          var(--surface);
+        box-shadow: var(--shadow);
+      }
+
+      .panel-title {
+        height: 42px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 0 12px;
+        border-bottom: 1px solid var(--line);
+        background: rgba(5, 8, 8, 0.72);
+      }
+
+      .panel-title strong {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        font-weight: 950;
+      }
+
+      .panel-title strong::before {
+        content: "";
+        width: 5px;
+        height: 17px;
+        background: var(--amber);
+        box-shadow: 0 0 16px rgba(235, 164, 72, 0.48);
+      }
+
+      .panel-title span {
+        color: var(--muted);
+        font-family: "Cascadia Mono", Consolas, monospace;
+        font-size: 10px;
+      }
+
+      .cursor-stage {
+        position: relative;
+        min-height: 640px;
+        overflow: hidden;
+        cursor: none;
+        background:
+          linear-gradient(rgba(128, 230, 213, 0.14) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(128, 230, 213, 0.12) 1px, transparent 1px),
+          radial-gradient(circle at 50% 52%, rgba(128, 230, 213, 0.08), transparent 22rem),
+          #060909;
+        background-size: 64px 64px, 64px 64px, auto, auto;
+      }
+
+      .cursor-stage::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-image:
+          linear-gradient(30deg, rgba(128, 230, 213, 0.07) 12%, transparent 12.5%, transparent 87%, rgba(128, 230, 213, 0.07) 87.5%, rgba(128, 230, 213, 0.07)),
+          linear-gradient(150deg, rgba(128, 230, 213, 0.07) 12%, transparent 12.5%, transparent 87%, rgba(128, 230, 213, 0.07) 87.5%, rgba(128, 230, 213, 0.07)),
+          linear-gradient(60deg, rgba(255, 255, 255, 0.02) 25%, transparent 25.5%, transparent 75%, rgba(255, 255, 255, 0.02) 75%, rgba(255, 255, 255, 0.02));
+        background-size: 72px 126px;
+        opacity: 0.26;
+      }
+
+      .axis-line {
+        position: absolute;
+        pointer-events: none;
+        background: rgba(235, 164, 72, 0.48);
+        opacity: 0.65;
+      }
+
+      .axis-line.x {
+        left: 0;
+        top: var(--cursor-y);
+        width: 100%;
+        height: 1px;
+      }
+
+      .axis-line.y {
+        left: var(--cursor-x);
+        top: 0;
+        width: 1px;
+        height: 100%;
+      }
+
+      .map-zone {
+        position: absolute;
+        border: 1px solid rgba(128, 230, 213, 0.26);
+        background: rgba(128, 230, 213, 0.032);
+      }
+
+      .map-zone.one {
+        left: 12%;
+        top: 15%;
+        width: 24%;
+        height: 28%;
+      }
+
+      .map-zone.two {
+        right: 13%;
+        top: 18%;
+        width: 28%;
+        height: 23%;
+        border-color: rgba(235, 164, 72, 0.42);
+        background: rgba(235, 164, 72, 0.035);
+      }
+
+      .map-zone.three {
+        left: 36%;
+        bottom: 13%;
+        width: 30%;
+        height: 20%;
+      }
+
+      .stage-tag {
+        position: absolute;
+        border-left: 3px solid var(--cyan);
+        background: rgba(4, 7, 7, 0.8);
+        padding: 7px 9px;
+        font-family: "Cascadia Mono", Consolas, monospace;
+        font-size: 10px;
+        color: var(--text);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+      }
+
+      .stage-tag em {
+        display: block;
+        margin-top: 3px;
+        color: var(--muted);
+        font-style: normal;
+      }
+
+      .stage-tag.a {
+        left: 15%;
+        top: 10%;
+      }
+
+      .stage-tag.b {
+        right: 16%;
+        top: 43%;
+        border-left-color: var(--amber);
+      }
+
+      .stage-tag.c {
+        left: 43%;
+        bottom: 8%;
+      }
+
+      .anchor {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        color: #0b0f0e;
+        font-weight: 950;
+        background:
+          radial-gradient(circle at 35% 28%, #fff3d2, #eaa448 44%, #71412a 100%);
+        border: 2px solid rgba(255, 229, 165, 0.95);
+        transform: translate(-50%, -50%);
+        box-shadow:
+          0 0 0 6px rgba(235, 164, 72, 0.12),
+          0 0 0 15px rgba(235, 164, 72, 0.045),
+          0 18px 38px rgba(0, 0, 0, 0.48);
+      }
+
+      .range-line {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: var(--range-length);
+        height: 1px;
+        transform-origin: left center;
+        transform: rotate(var(--range-angle));
+        background: linear-gradient(90deg, rgba(235, 164, 72, 0.8), rgba(128, 230, 213, 0.08));
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      body[data-mode="ruler"] .range-line {
+        opacity: 1;
+      }
+
+      .cursor-layer {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+
+      .cursor-core {
+        position: absolute;
+        left: var(--cursor-x);
+        top: var(--cursor-y);
+        width: 12px;
+        height: 12px;
+        transform: translate(-50%, -50%);
+        border: 1px solid var(--cyan);
+        background: rgba(128, 230, 213, 0.22);
+        box-shadow: 0 0 16px rgba(128, 230, 213, 0.5);
+      }
+
+      .cursor-ring {
+        position: absolute;
+        left: var(--cursor-x);
+        top: var(--cursor-y);
+        width: 78px;
+        height: 78px;
+        transform: translate(-50%, -50%);
+        border: 1px solid rgba(128, 230, 213, 0.58);
+        border-radius: 50%;
+        box-shadow: inset 0 0 18px rgba(128, 230, 213, 0.08);
+      }
+
+      .cursor-ring::before,
+      .cursor-ring::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        background: rgba(128, 230, 213, 0.8);
+        transform: translate(-50%, -50%);
+      }
+
+      .cursor-ring::before {
+        width: 110px;
+        height: 1px;
+      }
+
+      .cursor-ring::after {
+        width: 1px;
+        height: 110px;
+      }
+
+      .cursor-diamond {
+        position: absolute;
+        left: var(--cursor-x);
+        top: var(--cursor-y);
+        width: 54px;
+        height: 54px;
+        border: 1px solid rgba(128, 230, 213, 0.72);
+        transform: translate(-50%, -50%) rotate(45deg);
+        opacity: 0;
+      }
+
+      .cursor-diamond::before {
+        content: "";
+        position: absolute;
+        inset: 10px;
+        border: 1px solid rgba(235, 164, 72, 0.62);
+      }
+
+      .cursor-label {
+        position: absolute;
+        left: calc(var(--cursor-x) + 18px);
+        top: calc(var(--cursor-y) + 18px);
+        min-width: 156px;
+        padding: 8px 10px;
+        border-left: 3px solid var(--cyan);
+        background: rgba(4, 7, 7, 0.82);
+        box-shadow: 0 12px 26px rgba(0, 0, 0, 0.32);
+        font-family: "Cascadia Mono", Consolas, monospace;
+        font-size: 10px;
+        color: var(--text);
+      }
+
+      .cursor-label b {
+        color: var(--cyan);
+        font-weight: 900;
+      }
+
+      .cursor-label span {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+      }
+
+      .trail {
+        position: absolute;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        pointer-events: none;
+        background: rgba(128, 230, 213, 0.58);
+        box-shadow: 0 0 14px rgba(128, 230, 213, 0.46);
+        transform: translate(-50%, -50%);
+        opacity: 0;
+      }
+
+      body[data-mode="scan"] .cursor-core {
+        border-radius: 50%;
+      }
+
+      body[data-mode="trail"] .cursor-ring {
+        width: 34px;
+        height: 34px;
+        opacity: 0.72;
+      }
+
+      body[data-mode="trail"] .trail {
+        opacity: var(--trail-opacity);
+      }
+
+      body[data-mode="diamond"] .cursor-core {
+        width: 8px;
+        height: 8px;
+        transform: translate(-50%, -50%) rotate(45deg);
+      }
+
+      body[data-mode="diamond"] .cursor-ring {
+        opacity: 0;
+      }
+
+      body[data-mode="diamond"] .cursor-diamond {
+        opacity: 1;
+        animation: diamondPulse 1.8s ease-in-out infinite;
+      }
+
+      body[data-mode="threat"] .cursor-ring {
+        border-color: rgba(227, 91, 75, 0.78);
+        animation: threatBlink 700ms steps(2, end) infinite;
+      }
+
+      body[data-mode="threat"] .cursor-core {
+        border-color: var(--red);
+        background: rgba(227, 91, 75, 0.22);
+        box-shadow: 0 0 18px rgba(227, 91, 75, 0.55);
+      }
+
+      body[data-mode="threat"] .cursor-label {
+        border-left-color: var(--red);
+      }
+
+      body[data-mode="threat"] .cursor-label b {
+        color: #ffbbb3;
+      }
+
+      body[data-mode="ruler"] .cursor-ring {
+        width: 46px;
+        height: 46px;
+        border-radius: 2px;
+        transform: translate(-50%, -50%) rotate(45deg);
+      }
+
+      body[data-mode="ruler"] .cursor-ring::before,
+      body[data-mode="ruler"] .cursor-ring::after {
+        display: none;
+      }
+
+      .side-card {
+        min-height: 640px;
+      }
+
+      .scheme-list {
+        display: grid;
+        gap: 9px;
+        padding: 10px;
+      }
+
+      .scheme {
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.026);
+        padding: 11px;
+      }
+
+      .scheme.active {
+        border-color: rgba(128, 230, 213, 0.72);
+        background: rgba(128, 230, 213, 0.06);
+      }
+
+      .scheme small {
+        display: block;
+        color: var(--cyan);
+        font-family: "Cascadia Mono", Consolas, monospace;
+        font-size: 10px;
+        margin-bottom: 7px;
+      }
+
+      .scheme strong {
+        display: block;
+        font-size: 15px;
+        margin-bottom: 5px;
+      }
+
+      .scheme p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.55;
+      }
+
+      .readout {
+        margin: 10px;
+        padding: 11px;
+        border: 1px solid var(--line);
+        background: rgba(0, 0, 0, 0.18);
+        font-family: "Cascadia Mono", Consolas, monospace;
+        font-size: 11px;
+        color: var(--muted);
+      }
+
+      .readout div {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 5px 0;
+        border-bottom: 1px solid rgba(137, 199, 189, 0.1);
+      }
+
+      .readout div:last-child {
+        border-bottom: 0;
+      }
+
+      .readout strong {
+        color: var(--text);
+      }
+
+      @keyframes markSpin {
+        to {
+          transform: rotate(405deg);
+        }
+      }
+
+      @keyframes diamondPulse {
+        50% {
+          transform: translate(-50%, -50%) rotate(45deg) scale(1.12);
+          border-color: rgba(235, 164, 72, 0.78);
+        }
+      }
+
+      @keyframes threatBlink {
+        50% {
+          opacity: 0.38;
+          filter: hue-rotate(18deg);
+        }
+      }
+
+      @media (max-width: 1060px) {
+        .topbar,
+        .layout {
+          grid-template-columns: 1fr;
+        }
+
+        .status {
+          border-left: 0;
+          border-top: 1px solid var(--line);
+        }
+      }
+
+      @media (max-width: 720px) {
+        .topbar {
+          display: block;
+        }
+
+        .mark {
+          height: 68px;
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+
+        .cursor-stage {
+          min-height: 520px;
+        }
+
+        .cursor-label {
+          min-width: 132px;
+          max-width: 170px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 1ms !important;
+          animation-iteration-count: 1 !important;
+          transition: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body data-mode="scan">
+    <main class="shell">
+      <header class="topbar">
+        <div class="mark"><span>PRTS</span></div>
+        <section class="headline">
+          <small>PRTS cursor motion concepts / tactical pointer layer</small>
+          <h1>鼠标跟随动效方案</h1>
+          <p>
+            这一页只演示鼠标层：战术准星、数据拖尾、菱形终端节点、风险警戒、棋盘测距。移动鼠标到中央舞台区域内观察效果。
+          </p>
+        </section>
+        <aside class="status">
+          <div class="status-row"><span>POINTER</span><strong id="modeName">SCAN_RETICLE</strong></div>
+          <div class="status-row"><span>COORD</span><strong id="coord">000 / 000</strong></div>
+          <div class="status-row"><span>RANGE</span><strong id="range">000 PX</strong></div>
+        </aside>
+      </header>
+
+      <nav class="controls" aria-label="鼠标跟随方案">
+        <button class="active" data-mode="scan">01 扫描准星</button>
+        <button data-mode="trail">02 数据拖尾</button>
+        <button data-mode="diamond">03 菱形终端</button>
+        <button data-mode="threat">04 风险警戒</button>
+        <button data-mode="ruler">05 棋盘测距</button>
+      </nav>
+
+      <section class="layout">
+        <article class="stage-card">
+          <div class="panel-title"><strong>TACTICAL POINTER PREVIEW</strong><span id="stageState">LIVE</span></div>
+          <div class="cursor-stage" id="stage">
+            <div class="map-zone one"></div>
+            <div class="map-zone two"></div>
+            <div class="map-zone three"></div>
+            <div class="stage-tag a">AREA-04<em>fog / low signal</em></div>
+            <div class="stage-tag b">RISK NODE<em>ore dust trace</em></div>
+            <div class="stage-tag c">SAFE ROUTE<em>2 AP estimate</em></div>
+            <div class="range-line"></div>
+            <div class="anchor">T</div>
+            <div class="axis-line x"></div>
+            <div class="axis-line y"></div>
+            <div class="cursor-layer">
+              <span class="trail"></span>
+              <span class="trail"></span>
+              <span class="trail"></span>
+              <span class="trail"></span>
+              <span class="trail"></span>
+              <span class="trail"></span>
+              <span class="trail"></span>
+              <span class="trail"></span>
+              <div class="cursor-ring"></div>
+              <div class="cursor-diamond"></div>
+              <div class="cursor-core"></div>
+              <div class="cursor-label" id="cursorLabel">
+                <b>SCAN_RETICLE</b>
+                <span>pointer linked / local board</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <aside class="side-card">
+          <div class="panel-title"><strong>SCHEME INDEX</strong><span>SELECT</span></div>
+          <div class="scheme-list">
+            <div class="scheme active" data-scheme="scan">
+              <small>SCAN_RETICLE</small>
+              <strong>扫描准星</strong>
+              <p>最像战术终端。适合默认光标、棋盘 hover、选择格点。</p>
+            </div>
+            <div class="scheme" data-scheme="trail">
+              <small>DATA_TRAIL</small>
+              <strong>数据拖尾</strong>
+              <p>移动时留下短暂数据粒子。适合房间主页或登录页，不建议战斗时太强。</p>
+            </div>
+            <div class="scheme" data-scheme="diamond">
+              <small>DIAMOND_NODE</small>
+              <strong>菱形终端</strong>
+              <p>罗德岛终端感更强，适合按钮、面板、菜单区域的鼠标反馈。</p>
+            </div>
+            <div class="scheme" data-scheme="threat">
+              <small>THREAT_LOCK</small>
+              <strong>风险警戒</strong>
+              <p>红色警戒版。适合危险区、失败判定、不可操作对象。</p>
+            </div>
+            <div class="scheme" data-scheme="ruler">
+              <small>RANGE_RULER</small>
+              <strong>棋盘测距</strong>
+              <p>从 Token 到鼠标产生测距线。适合战棋移动、攻击范围预览。</p>
+            </div>
+          </div>
+          <div class="readout">
+            <div><span>cursor-x</span><strong id="rx">000</strong></div>
+            <div><span>cursor-y</span><strong id="ry">000</strong></div>
+            <div><span>anchor-distance</span><strong id="rr">000</strong></div>
+            <div><span>recommended-use</span><strong id="useCase">board hover</strong></div>
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <script>
+      const stage = document.querySelector("#stage");
+      const buttons = Array.from(document.querySelectorAll("button[data-mode]"));
+      const schemes = Array.from(document.querySelectorAll("[data-scheme]"));
+      const trails = Array.from(document.querySelectorAll(".trail"));
+      const modeName = document.querySelector("#modeName");
+      const coord = document.querySelector("#coord");
+      const range = document.querySelector("#range");
+      const rx = document.querySelector("#rx");
+      const ry = document.querySelector("#ry");
+      const rr = document.querySelector("#rr");
+      const useCase = document.querySelector("#useCase");
+      const cursorLabel = document.querySelector("#cursorLabel");
+
+      const labels = {
+        scan: ["SCAN_RETICLE", "board hover"],
+        trail: ["DATA_TRAIL", "landing / login"],
+        diamond: ["DIAMOND_NODE", "buttons / panels"],
+        threat: ["THREAT_LOCK", "danger / denied"],
+        ruler: ["RANGE_RULER", "movement range"],
+      };
+
+      let mode = "scan";
+      let x = 0;
+      let y = 0;
+      const trailPoints = trails.map(() => ({ x: 0, y: 0 }));
+
+      const setMode = (nextMode) => {
+        mode = nextMode;
+        document.body.dataset.mode = mode;
+        buttons.forEach((button) => button.classList.toggle("active", button.dataset.mode === mode));
+        schemes.forEach((scheme) => scheme.classList.toggle("active", scheme.dataset.scheme === mode));
+        modeName.textContent = labels[mode][0];
+        useCase.textContent = labels[mode][1];
+        cursorLabel.querySelector("b").textContent = labels[mode][0];
+      };
+
+      const format = (value) => String(Math.max(0, Math.round(value))).padStart(3, "0");
+
+      const updateStageVars = () => {
+        const rect = stage.getBoundingClientRect();
+        const cx = rect.width / 2;
+        const cy = rect.height / 2;
+        const dx = x - cx;
+        const dy = y - cy;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const angle = Math.atan2(dy, dx);
+
+        stage.style.setProperty("--cursor-x", `${x}px`);
+        stage.style.setProperty("--cursor-y", `${y}px`);
+        stage.style.setProperty("--range-length", `${distance}px`);
+        stage.style.setProperty("--range-angle", `${angle}rad`);
+
+        coord.textContent = `${format(x)} / ${format(y)}`;
+        range.textContent = `${format(distance)} PX`;
+        rx.textContent = format(x);
+        ry.textContent = format(y);
+        rr.textContent = format(distance);
+      };
+
+      const animateTrails = () => {
+        trailPoints[0].x += (x - trailPoints[0].x) * 0.35;
+        trailPoints[0].y += (y - trailPoints[0].y) * 0.35;
+
+        for (let index = 1; index < trailPoints.length; index += 1) {
+          trailPoints[index].x += (trailPoints[index - 1].x - trailPoints[index].x) * 0.34;
+          trailPoints[index].y += (trailPoints[index - 1].y - trailPoints[index].y) * 0.34;
+        }
+
+        trails.forEach((trail, index) => {
+          const point = trailPoints[index];
+          trail.style.left = `${point.x}px`;
+          trail.style.top = `${point.y}px`;
+          trail.style.setProperty("--trail-opacity", `${Math.max(0.12, 0.78 - index * 0.08)}`);
+          trail.style.width = `${Math.max(3, 10 - index)}px`;
+          trail.style.height = `${Math.max(3, 10 - index)}px`;
+        });
+
+        window.requestAnimationFrame(animateTrails);
+      };
+
+      const setFromEvent = (event) => {
+        const rect = stage.getBoundingClientRect();
+        x = Math.min(rect.width, Math.max(0, event.clientX - rect.left));
+        y = Math.min(rect.height, Math.max(0, event.clientY - rect.top));
+        updateStageVars();
+      };
+
+      buttons.forEach((button) => {
+        button.addEventListener("click", () => setMode(button.dataset.mode));
+      });
+
+      schemes.forEach((scheme) => {
+        scheme.addEventListener("click", () => setMode(scheme.dataset.scheme));
+      });
+
+      stage.addEventListener("pointermove", setFromEvent);
+      stage.addEventListener("pointerenter", setFromEvent);
+
+      const init = () => {
+        const rect = stage.getBoundingClientRect();
+        x = rect.width * 0.58;
+        y = rect.height * 0.48;
+        trailPoints.forEach((point) => {
+          point.x = x;
+          point.y = y;
+        });
+        setMode("scan");
+        updateStageVars();
+        animateTrails();
+      };
+
+      window.addEventListener("resize", init);
+      init();
+    </script>
+  </body>
+</html>

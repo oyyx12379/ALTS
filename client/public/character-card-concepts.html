@@ -1,0 +1,691 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ALTS Character Card Concepts</title>
+  <style>
+    :root {
+      --bg: #050706;
+      --panel: #101312;
+      --ink: #f4f7f4;
+      --muted: #9ea9a3;
+      --line: rgba(198, 216, 206, 0.22);
+      --cyan: #7be6d9;
+      --green: #92e075;
+      --amber: #f2b85a;
+      --red: #dd5045;
+      --blue: #72a7ff;
+      --black: #030404;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        linear-gradient(rgba(123, 230, 217, 0.032) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(123, 230, 217, 0.025) 1px, transparent 1px),
+        radial-gradient(circle at 18% 18%, rgba(221, 80, 69, 0.12), transparent 28%),
+        radial-gradient(circle at 80% 10%, rgba(123, 230, 217, 0.08), transparent 24%),
+        #050706;
+      background-size: 34px 34px, 34px 34px, auto, auto, auto;
+      color: var(--ink);
+      font-family: "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+    }
+
+    .page {
+      width: min(1540px, calc(100vw - 48px));
+      margin: 0 auto;
+      padding: 32px 0 48px;
+    }
+
+    .demo-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 18px;
+    }
+
+    .demo-head h1 {
+      margin: 0;
+      font-size: 26px;
+      letter-spacing: 0;
+    }
+
+    .demo-head span {
+      color: var(--muted);
+      font-family: Consolas, "Cascadia Mono", monospace;
+      font-size: 12px;
+    }
+
+    .concept-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 22px;
+      align-items: start;
+    }
+
+    .concept {
+      min-width: 0;
+    }
+
+    .concept-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+      color: var(--muted);
+      font-family: Consolas, "Cascadia Mono", monospace;
+      font-size: 11px;
+    }
+
+    .concept-label b {
+      color: var(--cyan);
+      font-size: 12px;
+    }
+
+    .card {
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+      background: var(--black);
+      border: 1px solid rgba(198, 216, 206, 0.28);
+      box-shadow:
+        0 18px 42px rgba(0, 0, 0, 0.44),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.035);
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+      background-size: 18px 18px;
+      mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.7), transparent 68%);
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    .card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border: 1px solid rgba(123, 230, 217, 0.18);
+      pointer-events: none;
+      z-index: 6;
+    }
+
+    .amiya {
+      position: absolute;
+      user-select: none;
+      pointer-events: none;
+      z-index: 1;
+      filter: drop-shadow(0 18px 24px rgba(0, 0, 0, 0.62));
+    }
+
+    .scan {
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(180deg, rgba(255,255,255,0.045) 0 1px, transparent 1px 5px);
+      mix-blend-mode: overlay;
+      opacity: 0.2;
+      z-index: 4;
+      pointer-events: none;
+    }
+
+    .hex {
+      position: absolute;
+      inset: 0;
+      opacity: 0.32;
+      z-index: 0;
+      background:
+        radial-gradient(circle at 50% 50%, rgba(123, 230, 217, 0.16), transparent 1.8px),
+        linear-gradient(30deg, transparent 38%, rgba(123, 230, 217, 0.12) 39%, rgba(123, 230, 217, 0.12) 41%, transparent 42%),
+        linear-gradient(150deg, transparent 38%, rgba(123, 230, 217, 0.12) 39%, rgba(123, 230, 217, 0.12) 41%, transparent 42%);
+      background-size: 26px 30px;
+    }
+
+    .rhodes-mark {
+      position: absolute;
+      width: 78px;
+      height: 78px;
+      border: 2px solid rgba(255, 255, 255, 0.92);
+      transform: rotate(45deg);
+      display: grid;
+      place-items: center;
+      background: rgba(0, 0, 0, 0.52);
+      z-index: 5;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.42);
+    }
+
+    .rhodes-mark span {
+      transform: rotate(-45deg);
+      color: white;
+      font-family: Georgia, serif;
+      font-size: 24px;
+      font-weight: 800;
+    }
+
+    .class-icon {
+      width: 34px;
+      height: 34px;
+      object-fit: contain;
+      filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.24));
+    }
+
+    .sub-icon {
+      width: 22px;
+      height: 22px;
+      object-fit: contain;
+    }
+
+    .elite-icon {
+      width: 36px;
+      height: 36px;
+      object-fit: contain;
+    }
+
+    .level-ring {
+      width: 70px;
+      height: 54px;
+      flex: 0 0 auto;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 30px;
+      padding: 4px 9px;
+      border: 1px solid rgba(123, 230, 217, 0.24);
+      background: rgba(3, 6, 6, 0.72);
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .barcode {
+      height: 28px;
+      width: 104px;
+      background: repeating-linear-gradient(90deg, white 0 2px, transparent 2px 5px, white 5px 7px, transparent 7px 12px);
+      opacity: 0.82;
+    }
+
+    .mini-text {
+      color: var(--muted);
+      font-family: Consolas, "Cascadia Mono", monospace;
+      font-size: 10px;
+      line-height: 1.4;
+    }
+
+    .name-cn {
+      font-size: 36px;
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: 0;
+      text-shadow: 0 3px 10px rgba(0, 0, 0, 0.72);
+    }
+
+    .name-en {
+      color: var(--muted);
+      font-family: Consolas, "Cascadia Mono", monospace;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      margin-top: 5px;
+    }
+
+    .data-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 7px 0;
+      border-bottom: 1px solid rgba(198, 216, 206, 0.13);
+      font-size: 12px;
+    }
+
+    .data-line span {
+      color: var(--muted);
+      font-family: Consolas, "Cascadia Mono", monospace;
+      font-size: 10px;
+    }
+
+    .data-line b {
+      color: var(--ink);
+    }
+
+    /* A: vertical terminal dossier */
+    .card-a {
+      height: 560px;
+      clip-path: polygon(0 0, calc(100% - 22px) 0, 100% 22px, 100% 100%, 20px 100%, 0 calc(100% - 20px));
+    }
+
+    .card-a .amiya {
+      width: 590px;
+      left: -118px;
+      bottom: -26px;
+    }
+
+    .card-a .name-block {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      top: 18px;
+      z-index: 5;
+      padding: 15px 15px 13px;
+      background: linear-gradient(90deg, rgba(0, 0, 0, 0.88), rgba(0, 0, 0, 0.46));
+      border-left: 4px solid var(--amber);
+      border-bottom: 1px solid rgba(242, 184, 90, 0.26);
+    }
+
+    .card-a .info-stack {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 18px;
+      z-index: 5;
+      padding: 12px;
+      background: rgba(4, 6, 6, 0.82);
+      border: 1px solid rgba(123, 230, 217, 0.22);
+      backdrop-filter: blur(8px);
+    }
+
+    .card-a .meta-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .card-a .rhodes-mark {
+      right: 20px;
+      top: 118px;
+    }
+
+    /* B: tactical license */
+    .card-b {
+      height: 560px;
+      background:
+        linear-gradient(120deg, rgba(255, 255, 255, 0.92) 0 38%, rgba(236, 239, 235, 0.9) 38% 55%, rgba(7, 9, 9, 0.94) 55% 100%);
+      color: #171918;
+    }
+
+    .card-b::after {
+      border-color: rgba(0, 0, 0, 0.18);
+    }
+
+    .card-b .amiya {
+      width: 625px;
+      left: -146px;
+      bottom: -20px;
+      filter: drop-shadow(0 24px 24px rgba(0, 0, 0, 0.44));
+    }
+
+    .card-b .white-band {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 72px;
+      height: 76px;
+      background: white;
+      z-index: 4;
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.22);
+    }
+
+    .card-b .black-stripe {
+      position: absolute;
+      left: 0;
+      top: 72px;
+      width: 78px;
+      height: 76px;
+      background: repeating-linear-gradient(135deg, #111 0 5px, transparent 5px 11px);
+      z-index: 5;
+    }
+
+    .card-b .license-name {
+      position: absolute;
+      left: 92px;
+      top: 82px;
+      z-index: 5;
+    }
+
+    .card-b .license-name .name-cn {
+      color: #161918;
+      text-shadow: none;
+      font-size: 34px;
+    }
+
+    .card-b .license-name .name-en {
+      color: #575f5b;
+    }
+
+    .card-b .license-panel {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 18px;
+      z-index: 5;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: end;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid rgba(0, 0, 0, 0.18);
+    }
+
+    .card-b .pill {
+      background: #111514;
+      color: white;
+      border-color: #111514;
+    }
+
+    .card-b .rhodes-mark {
+      right: 24px;
+      top: 110px;
+      background: #101211;
+    }
+
+    /* C: operator portrait card */
+    .card-c {
+      height: 560px;
+      background:
+        linear-gradient(180deg, rgba(5, 7, 7, 0.2), rgba(5, 7, 7, 0.96) 78%),
+        #070a0a;
+    }
+
+    .card-c .amiya {
+      width: 660px;
+      left: -155px;
+      bottom: -12px;
+    }
+
+    .card-c .top-rail {
+      position: absolute;
+      z-index: 5;
+      left: 18px;
+      right: 18px;
+      top: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .card-c .vertical-class {
+      position: absolute;
+      right: 20px;
+      top: 92px;
+      bottom: 130px;
+      z-index: 5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 8px;
+      background: rgba(0, 0, 0, 0.56);
+      border: 1px solid rgba(123, 230, 217, 0.24);
+    }
+
+    .card-c .vertical-class b {
+      writing-mode: vertical-rl;
+      color: var(--amber);
+      font-size: 15px;
+    }
+
+    .card-c .bottom-name {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 18px;
+      z-index: 5;
+      padding: 16px 15px;
+      background: linear-gradient(90deg, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.42));
+      border-top: 1px solid rgba(242, 184, 90, 0.38);
+    }
+
+    .card-c .bottom-meta {
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    /* D: horizontal mission plate */
+    .card-d {
+      height: 560px;
+      background:
+        linear-gradient(90deg, rgba(5, 7, 7, 0.96) 0 42%, rgba(5, 7, 7, 0.38) 70%, rgba(5, 7, 7, 0.92)),
+        #080a0a;
+    }
+
+    .card-d .amiya {
+      width: 690px;
+      left: -134px;
+      bottom: -44px;
+    }
+
+    .card-d .side-panel {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 46%;
+      z-index: 5;
+      padding: 22px 18px;
+      background:
+        linear-gradient(90deg, rgba(0, 0, 0, 0.94), rgba(0, 0, 0, 0.64)),
+        repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0 1px, transparent 1px 10px);
+      border-right: 1px solid rgba(123, 230, 217, 0.24);
+      clip-path: polygon(0 0, 100% 0, calc(100% - 34px) 100%, 0 100%);
+    }
+
+    .card-d .side-panel .name-cn {
+      margin-top: 18px;
+      font-size: 31px;
+      white-space: nowrap;
+    }
+
+    .card-d .side-panel .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .card-d .big-id {
+      position: absolute;
+      right: 18px;
+      top: 18px;
+      z-index: 5;
+      color: rgba(255, 255, 255, 0.16);
+      font-family: Impact, "Arial Black", sans-serif;
+      font-size: 74px;
+      line-height: 0.9;
+    }
+
+    .card-d .bottom-strip {
+      position: absolute;
+      left: 38%;
+      right: 18px;
+      bottom: 18px;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.9);
+      color: #111514;
+      border-left: 5px solid var(--amber);
+    }
+
+    .card-d .bottom-strip .mini-text {
+      color: #39413e;
+    }
+
+    @media (max-width: 1240px) {
+      .concept-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 720px) {
+      .page {
+        width: min(420px, calc(100vw - 24px));
+        padding-top: 18px;
+      }
+
+      .demo-head {
+        align-items: start;
+        flex-direction: column;
+      }
+
+      .concept-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="demo-head">
+      <div>
+        <span>ALTS / CHARACTER CARD VISUAL CONCEPT</span>
+        <h1>角色卡 UI 方案 - Amiya Sample</h1>
+      </div>
+      <span>DATA: AMIYA / ELITE 2 / LV.80 / CASTER</span>
+    </header>
+
+    <section class="concept-grid">
+      <article class="concept">
+        <div class="concept-label"><b>方案 A</b><span>终端档案型 / 竖版</span></div>
+        <div class="card card-a">
+          <div class="hex"></div>
+          <img class="amiya" src="/ca/ca_amiya.png" alt="Amiya" />
+          <div class="scan"></div>
+          <div class="rhodes-mark"><span>RI</span></div>
+          <div class="name-block">
+            <div class="mini-text">OPERATOR RECORD / ALTS-001</div>
+            <div class="name-cn">阿米娅</div>
+            <div class="name-en">AMIYA</div>
+          </div>
+          <div class="info-stack">
+            <div class="meta-row">
+              <span class="pill"><img class="class-icon" src="/logo/图标_职业_术师_大图_白.png" alt="" />术士</span>
+              <svg class="level-ring" viewBox="0 0 96 72" aria-hidden="true">
+                <circle cx="48" cy="37" r="31" fill="#050606"/>
+                <path d="M18 45a31 31 0 1 1 60 0" fill="none" stroke="#d3d018" stroke-width="6" stroke-linecap="round"/>
+                <text x="48" y="53" text-anchor="middle" font-size="44" font-weight="900" fill="#f6fbff">80</text>
+              </svg>
+            </div>
+            <div class="data-line"><span>ELITE PHASE</span><b>精英化阶段 2</b></div>
+            <div class="data-line"><span>SUBCLASS</span><b>中坚术师</b></div>
+            <div class="data-line"><span>ORIGINIUM ARTS</span><b>精神感应 / 高适应性</b></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="concept">
+        <div class="concept-label"><b>方案 B</b><span>罗德岛许可牌 / 黑白横带</span></div>
+        <div class="card card-b">
+          <img class="amiya" src="/ca/ca_amiya.png" alt="Amiya" />
+          <div class="white-band"></div>
+          <div class="black-stripe"></div>
+          <div class="rhodes-mark"><span>RI</span></div>
+          <div class="license-name">
+            <div class="mini-text">RHODES ISLAND SECURITY TERMINAL</div>
+            <div class="name-cn">阿米娅</div>
+            <div class="name-en">AMIYA / ACCESS LEVEL 5</div>
+          </div>
+          <div class="license-panel">
+            <div>
+              <div class="meta-row">
+                <span class="pill"><img class="class-icon" src="/logo/图标_职业_术师_大图_白.png" alt="" />术士</span>
+                <span class="pill"><img class="sub-icon" src="/logo/职业分支图标_中坚术师.png" alt="" />中坚术师</span>
+              </div>
+              <div class="data-line"><span>ELITE</span><b>PHASE 2</b></div>
+              <div class="data-line"><span>LEVEL</span><b>80</b></div>
+            </div>
+            <div class="barcode"></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="concept">
+        <div class="concept-label"><b>方案 C</b><span>干员肖像卡 / 立绘优先</span></div>
+        <div class="card card-c">
+          <div class="hex"></div>
+          <img class="amiya" src="/ca/ca_amiya.png" alt="Amiya" />
+          <div class="scan"></div>
+          <div class="top-rail">
+            <img class="elite-icon" src="/logo/精英_2_卡片.png" alt="" />
+            <svg class="level-ring" viewBox="0 0 96 72" aria-hidden="true">
+              <circle cx="48" cy="37" r="31" fill="#050606"/>
+              <path d="M18 45a31 31 0 1 1 60 0" fill="none" stroke="#d3d018" stroke-width="6" stroke-linecap="round"/>
+              <text x="48" y="53" text-anchor="middle" font-size="44" font-weight="900" fill="#f6fbff">80</text>
+            </svg>
+          </div>
+          <div class="vertical-class">
+            <img class="class-icon" src="/logo/图标_职业_术师_大图_白.png" alt="" />
+            <b>术士</b>
+          </div>
+          <div class="bottom-name">
+            <div class="mini-text">TACTICAL OPERATOR CARD</div>
+            <div class="name-cn">阿米娅</div>
+            <div class="name-en">AMIYA / RHODES ISLAND</div>
+            <div class="bottom-meta">
+              <span class="pill"><img class="sub-icon" src="/logo/职业分支图标_中坚术师.png" alt="" />中坚术师</span>
+              <span class="mini-text">ID: ALTS-CA-001</span>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="concept">
+        <div class="concept-label"><b>方案 D</b><span>任务终端牌 / 信息左置</span></div>
+        <div class="card card-d">
+          <div class="hex"></div>
+          <img class="amiya" src="/ca/ca_amiya.png" alt="Amiya" />
+          <div class="scan"></div>
+          <div class="big-id">001</div>
+          <div class="side-panel">
+            <div class="mini-text">ARKLINK TERMINAL SERVICE</div>
+            <div class="name-cn">阿米娅</div>
+            <div class="name-en">AMIYA</div>
+            <div class="meta">
+              <span class="pill"><img class="class-icon" src="/logo/图标_职业_术师_大图_白.png" alt="" />术士</span>
+              <span class="pill"><img class="sub-icon" src="/logo/职业分支图标_中坚术师.png" alt="" />中坚术师</span>
+              <span class="pill">精英化 2</span>
+            </div>
+            <div style="margin-top: 26px;">
+              <div class="data-line"><span>LEVEL</span><b>80</b></div>
+              <div class="data-line"><span>ROLE</span><b>战术指挥 / 法术输出</b></div>
+              <div class="data-line"><span>STATUS</span><b>ACTIVE</b></div>
+            </div>
+          </div>
+          <div class="bottom-strip">
+            <div>
+              <div class="mini-text">MISSION CARD / VERIFIED OPERATOR</div>
+              <b>RHODES ISLAND</b>
+            </div>
+            <div class="barcode"></div>
+          </div>
+        </div>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

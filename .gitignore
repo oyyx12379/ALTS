@@ -1,0 +1,39 @@
+# Dependencies and build output
+node_modules/
+client/node_modules/
+server/node_modules/
+client/dist/
+server/dist/
+
+# Local application data and secrets
+.env
+.env.*
+!.env.example
+server/prisma/*.db
+server/prisma/*.db-*
+server/uploads/
+.cloudflared/
+
+# Local deployment tools and logs
+deploy/cloudflared.exe
+deploy/*.log
+
+# Temporary and reference-only materials
+.agents/
+tmp/
+temp_*.txt
+tmp_*.png
+参考图/
+The-font-of-Arknights-master/
+/ca/
+/LOGO/
+/MAP/
+/enimies_animy/
+/2.png
+/世界观.pdf
+/行于泰拉v1.2.pdf
+/v1.2*.xlsx
+
+# Operating system files
+.DS_Store
+Thumbs.db

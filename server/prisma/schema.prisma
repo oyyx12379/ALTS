@@ -1,0 +1,285 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// ========== 用户 ==========
+model User {
+  id        Int         @id @default(autoincrement())
+  username  String      @unique
+  password  String
+  role      String      @default("PL") // SN or PL
+  createdAt DateTime    @default(now())
+  characters Character[]
+  roomMembers RoomMember[]
+  roomMessages RoomMessage[]
+}
+
+// ========== 角色卡 ==========
+model Character {
+  id          Int         @id @default(autoincrement())
+  userId      Int
+  user        User        @relation(fields: [userId], references: [id])
+
+  // 基础信息
+  name        String      @default("")
+  player      String      @default("")
+  gender      String      @default("")
+  age         String      @default("")
+  birthday    String      @default("")
+  origin      String      @default("")
+  race        String      @default("")
+  profession  String      @default("")
+  subProfession String    @default("")
+  height      String      @default("")
+  weight      String      @default("")
+  elitePhase  String      @default("阶段零")
+  level       Int         @default(1)
+
+  // 原始Excel数据JSON
+  rawData     String      @default("{}")
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  attributes  CharacterAttribute[]
+  skills      CharacterSkill[]
+  traits      CharacterTrait[]
+  arts        CharacterArt[]
+  combat      CharacterCombat?
+  infection   CharacterInfection?
+  equipments  CharacterEquipment[]
+  roomMembers RoomMember[]
+  traitBudget CharacterTraitBudget?
+}
+
+// 七大基础属性
+model CharacterAttribute {
+  id          Int       @id @default(autoincrement())
+  characterId Int
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  name        String    // PR/MOB/PS/SPR/INT/OAA/APP
+  base        Int       @default(5)
+  modifier    Int       @default(0)
+  growth      Int       @default(0)
+}
+
+// 技能
+model CharacterSkill {
+  id          Int       @id @default(autoincrement())
+  characterId Int
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  name        String    // 技能名称
+  category    String    // 技能分类 (力量/战术/敏捷/...)
+  value       Int       @default(0)
+  growth      Int       @default(0)
+  modifier    Int       @default(0)
+  isMain      Boolean   @default(false) // 是否为★技能（上限更高）
+  maxValue    String    @default("0")  // 上限值 "3/3" or "0"
+  sourceTrait String    @default("")
+}
+
+// 特质
+model CharacterTrait {
+  type        String    @default("secondary")
+  subcategory String    @default("")
+  parentName  String    @default("")
+  pointType   String    @default("trait")
+  source      String    @default("manual")
+  isModifier  Boolean   @default(false)
+  sortOrder   Int       @default(0)
+  id          Int       @id @default(autoincrement())
+  characterId Int
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String    @default("")
+  effect      String    @default("")
+  effectSelections String @default("[]")
+  cost        Int       @default(0)
+  category    String    @default("") // 种族/文化/工作/天赋/修正因子
+}
+
+// 源石技艺
+model CharacterTraitBudget {
+  id                 Int       @id @default(autoincrement())
+  characterId        Int       @unique
+  character          Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  traitPointsBase    Int       @default(40)
+  traitPointsLimit   Int       @default(80)
+  socialDiceCount    Int       @default(0)
+  socialPointsRolled Int       @default(0)
+}
+
+model CharacterArt {
+  id          Int       @id @default(autoincrement())
+  characterId Int
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String    @default("")
+  spCost      Int       @default(0)
+  actionCost  String    @default("")
+  range       String    @default("")
+  effect      String    @default("")
+  phase       String    @default("精零") // 精零/精一/精二/模组
+}
+
+// 战斗数据
+model CharacterCombat {
+  id          Int       @id @default(autoincrement())
+  characterId Int       @unique
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  hpMax       Int       @default(15)
+  physResist  Int       @default(3)
+  magicResist Int       @default(3)
+  resistCommonSkill String @default("")
+  spMax       Int       @default(9)
+  spInit      Int       @default(0)
+  spInitBonus Int       @default(0)
+  elemResist  Int       @default(6)
+  weight      Int       @default(1)
+  staminaMax  Int       @default(2)
+
+  weaponName  String    @default("")
+  weaponDice  String    @default("D6")
+  weaponType  String    @default("")
+  armorType   String    @default("中甲")
+  attackRange String    @default("")
+}
+
+// 感染数据
+model CharacterInfection {
+  id          Int       @id @default(autoincrement())
+  characterId Int       @unique
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  immunity    Int       @default(5)
+  initialValue Int      @default(0)
+  currentValue Int      @default(0)
+  stage       String    @default("未感染")
+  symptoms    String    @default("")
+  tempOutbreak String   @default("")
+  longTerm     String    @default("")
+}
+
+// 装备
+model CharacterEquipment {
+  id          Int       @id @default(autoincrement())
+  characterId Int
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  name        String
+  type        String    @default("")
+  effect      String    @default("")
+  slot        String    @default("")
+}
+
+// ========== 规则数据库 ==========
+
+// 种族规则
+model RuleRace {
+  id          Int     @id @default(autoincrement())
+  name        String  @unique
+  description String  @default("")
+  attrBonuses String  @default("{}") // JSON: {PR: 1, MOB: 2, ...}
+  traitDiscounts String @default("[]") // JSON
+}
+
+// 文化规则
+model RuleCulture {
+  id          Int     @id @default(autoincrement())
+  name        String  @unique
+  description String  @default("")
+  effects     String  @default("{}")
+}
+
+// 特质规则
+model RuleTrait {
+  type        String  @default("secondary")
+  subcategory String  @default("")
+  costText    String  @default("")
+  parentName  String  @default("")
+  requires    String  @default("[]")
+  isModifier  Boolean @default(false)
+  source      String  @default("excel")
+  id          Int     @id @default(autoincrement())
+  name        String
+  description String  @default("")
+  effect      String  @default("")
+  cost        Int     @default(0)
+  category    String  @default("") // 种族/文化/工作/天赋/修正因子
+  tags        String  @default("[]")
+}
+
+// 战斗职业规则
+model RuleCombatClass {
+  id          Int     @id @default(autoincrement())
+  name        String  @unique
+  branch      String  @default("")
+  engName     String  @default("")
+  branchTrait String  @default("")
+  weaponType  String  @default("")
+  spRecovery  String  @default("")
+  armors      String  @default("{}") // JSON: {hpAlgorithm, physResistAlg, magicResistAlg}
+  phases      String  @default("[]") // JSON array of phases with talents/skills
+}
+
+// 源石技艺规则
+model RuleArt {
+  id          Int     @id @default(autoincrement())
+  name        String
+  school      String  @default("") // 原力/光明/暗影/火焰...
+  phase       String  @default("精零")
+  actionCost  String  @default("")
+  spCost      Int     @default(0)
+  range       String  @default("")
+  target      String  @default("")
+  effect      String  @default("")
+}
+
+// ========== 游戏房间 ==========
+model Room {
+  id          Int         @id @default(autoincrement())
+  name        String
+  description String      @default("")
+  inviteCode  String      @unique
+  snId        Int
+  boardState  String      @default("{}")
+  maxPlayers  Int         @default(6)
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  archivedAt  DateTime?
+  members     RoomMember[]
+  messages    RoomMessage[]
+}
+
+model RoomMember {
+  id          Int       @id @default(autoincrement())
+  roomId      Int
+  room        Room      @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  userId      Int
+  user        User      @relation(fields: [userId], references: [id])
+  characterId Int?
+  character   Character? @relation(fields: [characterId], references: [id], onDelete: SetNull)
+  role        String    @default("PL") // SN or PL
+  joinedAt    DateTime  @default(now())
+}
+
+model RoomMessage {
+  id          Int       @id @default(autoincrement())
+  roomId      Int
+  room        Room      @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  userId      Int
+  user        User      @relation(fields: [userId], references: [id])
+  type        String    @default("text") // text, dice, system
+  content     String
+  createdAt   DateTime  @default(now())
+}

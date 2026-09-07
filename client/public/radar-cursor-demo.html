@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Radar Cursor Demo</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #060909;
+      --panel: rgba(8, 13, 13, 0.84);
+      --line: rgba(128, 230, 213, 0.72);
+      --line-soft: rgba(128, 230, 213, 0.16);
+      --amber: rgba(235, 164, 72, 0.84);
+      --text: #edf3ef;
+      --muted: #8a9a95;
+      --border: rgba(128, 230, 213, 0.24);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background:
+        linear-gradient(rgba(128, 230, 213, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(128, 230, 213, 0.025) 1px, transparent 1px),
+        radial-gradient(circle at 30% 24%, rgba(128, 230, 213, 0.1), transparent 28rem),
+        radial-gradient(circle at 82% 74%, rgba(235, 164, 72, 0.08), transparent 26rem),
+        var(--bg);
+      background-size: 36px 36px, 36px 36px, auto, auto, auto;
+      color: var(--text);
+      font-family: "Cascadia Mono", Consolas, "Microsoft YaHei", sans-serif;
+    }
+
+    .radar-layer,
+    .trail-layer {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+    }
+
+    .radar-layer {
+      z-index: 0;
+      mix-blend-mode: screen;
+      opacity: 0.92;
+    }
+
+    .app-shell {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: 68px minmax(0, 1fr) 330px;
+      height: 100vh;
+      min-width: 0;
+    }
+
+    .trail-layer {
+      z-index: 5;
+      mix-blend-mode: screen;
+    }
+
+    .sidebar {
+      border-right: 1px solid var(--border);
+      background: rgba(5, 9, 9, 0.86);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .mark {
+      width: 42px;
+      height: 42px;
+      border: 1px solid rgba(128, 230, 213, 0.7);
+      display: grid;
+      place-items: center;
+      position: relative;
+      color: #eba448;
+      font-weight: 900;
+      box-shadow: 0 0 22px rgba(128, 230, 213, 0.18);
+    }
+
+    .mark::before,
+    .mark::after {
+      content: "";
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      border: 1px solid rgba(128, 230, 213, 0.56);
+      transform: rotate(45deg);
+    }
+
+    .mark::after {
+      width: 14px;
+      height: 14px;
+      border-color: rgba(235, 164, 72, 0.8);
+      animation: spin 8s linear infinite;
+    }
+
+    .nav-dot {
+      width: 34px;
+      height: 34px;
+      border: 1px solid rgba(128, 230, 213, 0.22);
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.025);
+    }
+
+    .nav-dot.active {
+      color: #80e6d5;
+      border-color: rgba(128, 230, 213, 0.7);
+      background: rgba(128, 230, 213, 0.08);
+    }
+
+    .main {
+      min-width: 0;
+      padding: 28px;
+      overflow: auto;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .title {
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .status {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .board {
+      min-height: 560px;
+      border: 1px solid var(--border);
+      background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.04), transparent),
+        rgba(6, 10, 10, 0.72);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .board::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(rgba(128, 230, 213, 0.09) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(128, 230, 213, 0.075) 1px, transparent 1px);
+      background-size: 56px 56px;
+      opacity: 0.65;
+      pointer-events: none;
+    }
+
+    .token {
+      position: absolute;
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      border: 2px solid currentColor;
+      background: rgba(4, 8, 8, 0.88);
+      font-weight: 900;
+      box-shadow: 0 0 18px currentColor;
+    }
+
+    .token.ally { left: 22%; top: 30%; color: #6aa7ff; }
+    .token.self { left: 42%; top: 54%; color: #87df8f; }
+    .token.enemy { left: 68%; top: 36%; color: #ef9b48; }
+    .token.threat { left: 78%; top: 62%; color: #e85249; }
+
+    .panel {
+      border-left: 1px solid var(--border);
+      background: var(--panel);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      position: relative;
+      z-index: 3;
+    }
+
+    .card {
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.028);
+      padding: 14px;
+    }
+
+    .card strong {
+      display: block;
+      color: #80e6d5;
+      margin-bottom: 8px;
+    }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: auto;
+    }
+
+    button {
+      border: 1px solid rgba(128, 230, 213, 0.42);
+      background: rgba(8, 13, 13, 0.9);
+      color: var(--text);
+      padding: 10px 12px;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    button:hover {
+      border-color: rgba(128, 230, 213, 0.85);
+      background: rgba(128, 230, 213, 0.08);
+    }
+
+    @keyframes spin {
+      to { transform: rotate(405deg); }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="radarLayer" class="radar-layer" aria-hidden="true"></canvas>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="mark">W</div>
+      <div class="nav-dot active">◆</div>
+      <div class="nav-dot">◇</div>
+      <div class="nav-dot">◉</div>
+      <div class="nav-dot">▣</div>
+    </aside>
+    <main class="main">
+      <div class="topbar">
+        <div class="title">RADAR TARGET CURSOR</div>
+        <div class="status">LOCK GRID / LOW LAYER SCAN</div>
+      </div>
+      <section class="board">
+        <div class="token ally">A</div>
+        <div class="token self">S</div>
+        <div class="token enemy">E</div>
+        <div class="token threat">!</div>
+      </section>
+    </main>
+    <aside class="panel">
+      <div class="card">
+        <strong>SCAN FEED</strong>
+        <p>坐标线绘制在下层，UI 面板和按钮保持在其上方。</p>
+      </div>
+      <div class="card">
+        <strong>TARGET TRACE</strong>
+        <p>上层只保留短折面拖尾，避免覆盖主要界面。</p>
+      </div>
+      <div class="button-row">
+        <button>LOCK</button>
+        <button>MARK</button>
+      </div>
+    </aside>
+  </div>
+  <canvas id="trailLayer" class="trail-layer" aria-hidden="true"></canvas>
+
+  <script>
+    const radarCanvas = document.getElementById('radarLayer')
+    const trailCanvas = document.getElementById('trailLayer')
+    const radar = radarCanvas.getContext('2d')
+    const trail = trailCanvas.getContext('2d')
+
+    const cursor = {
+      x: innerWidth * 0.5,
+      y: innerHeight * 0.5,
+      tx: innerWidth * 0.5,
+      ty: innerHeight * 0.5,
+      px: innerWidth * 0.5,
+      py: innerHeight * 0.5,
+      vx: 0,
+      vy: 0,
+      speed: 0,
+      active: false,
+    }
+
+    const shards = []
+    const sparks = []
+    let width = 0
+    let height = 0
+    let dpr = 1
+    let lastTime = performance.now()
+    let lastShardX = cursor.x
+    let lastShardY = cursor.y
+
+    const colors = {
+      cyan: '128, 230, 213',
+      amber: '235, 164, 72',
+      white: '232, 244, 240',
+    }
+
+    function resize() {
+      dpr = Math.min(devicePixelRatio || 1, 2)
+      width = innerWidth
+      height = innerHeight
+      for (const canvas of [radarCanvas, trailCanvas]) {
+        canvas.width = Math.floor(width * dpr)
+        canvas.height = Math.floor(height * dpr)
+        canvas.style.width = `${width}px`
+        canvas.style.height = `${height}px`
+      }
+      radar.setTransform(dpr, 0, 0, dpr, 0, 0)
+      trail.setTransform(dpr, 0, 0, dpr, 0, 0)
+    }
+
+    function line(ctx, x1, y1, x2, y2, stroke, alpha, lineWidth = 1) {
+      ctx.globalAlpha = alpha
+      ctx.strokeStyle = stroke
+      ctx.lineWidth = lineWidth
+      ctx.beginPath()
+      ctx.moveTo(x1, y1)
+      ctx.lineTo(x2, y2)
+      ctx.stroke()
+    }
+
+    function drawRadar(time, speedFactor) {
+      radar.clearRect(0, 0, width, height)
+      if (!cursor.active) return
+
+      const pulse = 0.5 + Math.sin(time * 0.006) * 0.5
+      const x = Math.round(cursor.x) + 0.5
+      const y = Math.round(cursor.y) + 0.5
+
+      radar.save()
+      radar.shadowColor = `rgba(${colors.cyan}, 0.34)`
+      radar.shadowBlur = 10
+      line(radar, x, 0, x, height, `rgba(${colors.cyan}, 0.9)`, 0.3 + pulse * 0.12, 1)
+      line(radar, 0, y, width, y, `rgba(${colors.cyan}, 0.9)`, 0.3 + pulse * 0.12, 1)
+
+      radar.shadowBlur = 0
+      line(radar, x - 9, 0, x - 9, height, `rgba(${colors.cyan}, 0.55)`, 0.06, 1)
+      line(radar, x + 9, 0, x + 9, height, `rgba(${colors.cyan}, 0.55)`, 0.06, 1)
+      line(radar, 0, y - 9, width, y - 9, `rgba(${colors.cyan}, 0.55)`, 0.06, 1)
+      line(radar, 0, y + 9, width, y + 9, `rgba(${colors.cyan}, 0.55)`, 0.06, 1)
+
+      const notch = 22 + speedFactor * 20
+      line(radar, x - notch, y, x - 8, y, `rgba(${colors.amber}, 0.85)`, 0.58, 1.2)
+      line(radar, x + 8, y, x + notch, y, `rgba(${colors.amber}, 0.85)`, 0.58, 1.2)
+      line(radar, x, y - notch, x, y - 8, `rgba(${colors.amber}, 0.85)`, 0.58, 1.2)
+      line(radar, x, y + 8, x, y + notch, `rgba(${colors.amber}, 0.85)`, 0.58, 1.2)
+
+      radar.globalAlpha = 0.26 + pulse * 0.12
+      radar.strokeStyle = `rgba(${colors.cyan}, 0.82)`
+      radar.lineWidth = 1
+      radar.strokeRect(x - 16, y - 16, 32, 32)
+      radar.restore()
+    }
+
+    function pushShard(speedFactor) {
+      const distance = Math.hypot(cursor.x - lastShardX, cursor.y - lastShardY)
+      if (distance < 8 + speedFactor * 12) return
+      lastShardX = cursor.x
+      lastShardY = cursor.y
+
+      const angle = Math.atan2(cursor.vy, cursor.vx || 0.001)
+      const backAngle = angle + Math.PI
+      const side = (Math.random() - 0.5) * (18 + speedFactor * 22)
+      const back = 14 + Math.random() * (18 + speedFactor * 26)
+      shards.push({
+        x: cursor.x + Math.cos(backAngle) * back + Math.cos(angle + Math.PI / 2) * side,
+        y: cursor.y + Math.sin(backAngle) * back + Math.sin(angle + Math.PI / 2) * side,
+        angle: angle + (Math.random() - 0.5) * 0.9,
+        life: 0,
+        ttl: 250 + speedFactor * 80 + Math.random() * 60,
+        scale: 0.36 + speedFactor * 0.58,
+      })
+      if (shards.length > 22) shards.splice(0, shards.length - 22)
+    }
+
+    function drawShard(shard, delta) {
+      shard.life += delta
+      const age = shard.life / shard.ttl
+      const opacity = Math.max(0, 1 - age)
+      if (opacity <= 0) return false
+
+      shard.x += Math.cos(shard.angle + Math.PI) * (0.4 + shard.scale) * (delta / 16)
+      shard.y += Math.sin(shard.angle + Math.PI) * (0.4 + shard.scale) * (delta / 16)
+
+      trail.save()
+      trail.translate(shard.x, shard.y)
+      trail.rotate(shard.angle)
+      trail.scale(shard.scale, shard.scale * 0.86)
+      trail.lineWidth = 1.15 / Math.max(0.45, shard.scale)
+      trail.shadowColor = `rgba(${colors.cyan}, ${opacity * 0.24})`
+      trail.shadowBlur = 8
+
+      const faces = [
+        [[0, -10], [18, -2], [3, 10]],
+        [[3, 10], [18, -2], [20, 13]],
+        [[0, -10], [-14, 0], [3, 10]],
+      ]
+      faces.forEach((face, index) => {
+        trail.beginPath()
+        face.forEach(([x, y], pointIndex) => {
+          if (pointIndex === 0) trail.moveTo(x, y)
+          else trail.lineTo(x, y)
+        })
+        trail.closePath()
+        const rgb = index === 1 ? colors.amber : colors.cyan
+        trail.globalAlpha = opacity * (0.2 + index * 0.08)
+        trail.fillStyle = `rgba(${rgb}, 0.18)`
+        trail.strokeStyle = `rgba(${rgb}, 0.72)`
+        trail.fill()
+        trail.globalAlpha = opacity * 0.6
+        trail.stroke()
+      })
+      trail.restore()
+      return true
+    }
+
+    function drawTrail(delta, speedFactor) {
+      trail.clearRect(0, 0, width, height)
+      trail.globalCompositeOperation = 'lighter'
+      if (cursor.active) pushShard(speedFactor)
+
+      for (let i = shards.length - 1; i >= 0; i -= 1) {
+        if (!drawShard(shards[i], delta)) shards.splice(i, 1)
+      }
+
+      for (let i = sparks.length - 1; i >= 0; i -= 1) {
+        const spark = sparks[i]
+        spark.life += delta
+        const opacity = Math.max(0, 1 - spark.life / spark.ttl)
+        if (opacity <= 0) {
+          sparks.splice(i, 1)
+          continue
+        }
+        spark.x += spark.vx * (delta / 16)
+        spark.y += spark.vy * (delta / 16)
+        trail.save()
+        trail.translate(spark.x, spark.y)
+        trail.rotate(spark.angle)
+        trail.globalAlpha = opacity * 0.65
+        trail.fillStyle = `rgba(${colors.cyan}, 0.8)`
+        trail.fillRect(-spark.size * 0.5, -spark.size * 0.5, spark.size * 3, spark.size)
+        trail.restore()
+      }
+      trail.globalCompositeOperation = 'source-over'
+    }
+
+    function spawnSpark(speedFactor) {
+      if (speedFactor < 0.24 || Math.random() > 0.34) return
+      const angle = Math.atan2(cursor.vy, cursor.vx || 0.001) + Math.PI + (Math.random() - 0.5) * 1.1
+      const push = 1.2 + Math.random() * 4
+      sparks.push({
+        x: cursor.x + (Math.random() - 0.5) * 18,
+        y: cursor.y + (Math.random() - 0.5) * 18,
+        vx: Math.cos(angle) * push,
+        vy: Math.sin(angle) * push,
+        life: 0,
+        ttl: 210 + Math.random() * 120,
+        size: 1.4 + Math.random() * 2.2,
+        angle,
+      })
+      if (sparks.length > 34) sparks.splice(0, sparks.length - 34)
+    }
+
+    function animate(time) {
+      const delta = Math.min(34, time - lastTime)
+      lastTime = time
+
+      cursor.px = cursor.x
+      cursor.py = cursor.y
+      cursor.x += (cursor.tx - cursor.x) * 0.34
+      cursor.y += (cursor.ty - cursor.y) * 0.34
+      cursor.vx = cursor.x - cursor.px
+      cursor.vy = cursor.y - cursor.py
+      cursor.speed = cursor.speed * 0.72 + Math.hypot(cursor.vx, cursor.vy) * 0.28
+      const speedFactor = Math.min(1, cursor.speed / 24)
+
+      if (cursor.active) spawnSpark(speedFactor)
+      drawRadar(time, speedFactor)
+      drawTrail(delta, speedFactor)
+      requestAnimationFrame(animate)
+    }
+
+    addEventListener('resize', resize)
+    addEventListener('pointermove', (event) => {
+      cursor.tx = event.clientX
+      cursor.ty = event.clientY
+      if (!cursor.active) {
+        cursor.active = true
+        cursor.x = event.clientX
+        cursor.y = event.clientY
+        cursor.px = event.clientX
+        cursor.py = event.clientY
+        lastShardX = event.clientX
+        lastShardY = event.clientY
+      }
+    }, { passive: true })
+    document.addEventListener('mouseleave', () => {
+      cursor.active = false
+      shards.splice(0, shards.length)
+      sparks.splice(0, sparks.length)
+      radar.clearRect(0, 0, width, height)
+      trail.clearRect(0, 0, width, height)
+    })
+
+    resize()
+    requestAnimationFrame(animate)
+  </script>
+</body>
+</html>

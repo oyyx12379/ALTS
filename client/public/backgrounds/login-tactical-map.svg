@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" role="img" aria-label="subdued hex tactical map background">
+  <defs>
+    <pattern id="hex" width="52" height="45" patternUnits="userSpaceOnUse">
+      <path d="M13 1H39L52 22.5 39 44H13L0 22.5Z" fill="none" stroke="#d8e0dc" stroke-opacity=".13" stroke-width="1"/>
+    </pattern>
+    <pattern id="small-dots" width="18" height="18" patternUnits="userSpaceOnUse">
+      <circle cx="9" cy="9" r="1.1" fill="#80e6d5" opacity=".12"/>
+    </pattern>
+    <filter id="soften" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="18"/>
+    </filter>
+    <filter id="fog" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency=".012 .024" numOctaves="3" seed="19"/>
+      <feColorMatrix type="matrix" values="1 0 0 0 0.86 0 1 0 0 0.9 0 0 1 0 0.88 0 0 0 .58 0"/>
+      <feGaussianBlur stdDeviation="7"/>
+    </filter>
+    <linearGradient id="map-light" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#f2f4f0" stop-opacity=".08"/>
+      <stop offset=".44" stop-color="#edf3ef" stop-opacity=".18"/>
+      <stop offset="1" stop-color="#edf3ef" stop-opacity=".04"/>
+    </linearGradient>
+    <radialGradient id="center-glow" cx="58%" cy="46%" r="58%">
+      <stop offset="0" stop-color="#edf3ef" stop-opacity=".18"/>
+      <stop offset=".38" stop-color="#80e6d5" stop-opacity=".055"/>
+      <stop offset="1" stop-color="#050707" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1920" height="1080" fill="#050707"/>
+  <rect width="1920" height="1080" fill="url(#center-glow)"/>
+  <rect x="-60" y="-30" width="2040" height="1140" fill="url(#hex)"/>
+  <rect width="1920" height="1080" fill="url(#small-dots)"/>
+
+  <g opacity=".23" filter="url(#soften)">
+    <path d="M96 468C230 248 422 166 676 204c142 21 236 90 380 90 134 0 240-74 410-38 162 34 278 136 350 284-100 20-186 0-296 10-150 14-206 94-352 118-168 28-270-64-410-68-126-4-222 74-358 62-130-11-224-86-304-194Z" fill="#edf3ef" opacity=".46"/>
+    <path d="M78 646c160 12 294 84 442 78 178-8 276-106 446-90 148 14 256 108 422 86 138-18 244-102 422-76-88 130-218 226-392 262-206 42-370-38-550-34-170 4-302 80-504 38C218 880 122 790 78 646Z" fill="#edf3ef" opacity=".25"/>
+  </g>
+
+  <g opacity=".34" fill="none" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M172 628 224 538 328 538 380 628 328 718 224 718Z" stroke="#8fbf68" stroke-width="3"/>
+    <path d="M276 538 328 448 432 448 484 538 432 628 328 628Z" stroke="#8fbf68" stroke-width="3"/>
+    <path d="M380 628 432 538 536 538 588 628 536 718 432 718Z" stroke="#b7a34e" stroke-width="3"/>
+    <path d="M1214 424 1266 334 1370 334 1422 424 1370 514 1266 514Z" stroke="#b26848" stroke-width="3"/>
+    <path d="M1368 512 1420 422 1524 422 1576 512 1524 602 1420 602Z" stroke="#cf554e" stroke-width="3"/>
+    <path d="M1472 602 1524 512 1628 512 1680 602 1628 692 1524 692Z" stroke="#cf554e" stroke-width="3"/>
+    <path d="M908 616 960 526 1064 526 1116 616 1064 706 960 706Z" stroke="#b26848" stroke-width="2"/>
+  </g>
+
+  <g opacity=".12" fill="#edf3ef">
+    <path d="M0 0h42v42H0zM52 0h58v58H52zM138 0h68v68H138zM250 0h78v78H250zM374 0h54v54H374zM482 0h72v72H482zM626 0h68v68H626zM742 0h92v92H742zM902 0h64v64H902zM1038 0h84v84H1038zM1198 0h58v58H1198zM1322 0h76v76H1322zM1468 0h104v104H1468zM1638 0h82v82H1638zM1798 0h122v122H1798z"/>
+  </g>
+
+  <g opacity=".22" fill="none" stroke="#80e6d5" stroke-width="1">
+    <path d="M86 268h330l54 54h248"/>
+    <path d="M1176 248h396l44-44h206"/>
+    <path d="M112 872h418l72-72h210"/>
+    <path d="M1166 846h314l84-84h238"/>
+    <path d="M650 372l186 138 236-86 226 164"/>
+  </g>
+
+  <g font-family="'Cascadia Mono', Consolas, monospace" font-size="18" fill="#edf3ef" opacity=".18">
+    <text x="120" y="300">OPERATION AREA</text>
+    <text x="1270" y="280">HEX GRID ONLINE</text>
+    <text x="936" y="748">TACTICAL MAP</text>
+  </g>
+
+  <rect x="-60" y="682" width="780" height="108" fill="#edf3ef" opacity=".045" transform="rotate(-12 330 736)"/>
+  <rect x="1230" y="238" width="680" height="118" fill="#edf3ef" opacity=".035" transform="rotate(9 1570 297)"/>
+  <rect width="1920" height="1080" filter="url(#fog)" opacity=".18"/>
+  <rect width="1920" height="1080" fill="#050707" opacity=".24"/>
+</svg>

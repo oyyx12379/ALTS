@@ -1,0 +1,910 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>末日科技风动效方向稿</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #080a09;
+        --panel: rgba(15, 18, 17, 0.88);
+        --panel-2: rgba(22, 25, 22, 0.86);
+        --line: rgba(171, 181, 157, 0.18);
+        --line-hot: rgba(245, 169, 69, 0.72);
+        --text: #eef1e8;
+        --muted: #8f988a;
+        --green: #88d18a;
+        --amber: #f5a945;
+        --red: #e75745;
+        --cyan: #67d8c0;
+        --shadow: 0 18px 50px rgba(0, 0, 0, 0.42);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", "Microsoft YaHei", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: var(--text);
+        background:
+          linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.014) 1px, transparent 1px),
+          radial-gradient(circle at 18% 14%, rgba(245, 169, 69, 0.08), transparent 24rem),
+          radial-gradient(circle at 86% 76%, rgba(103, 216, 192, 0.05), transparent 22rem),
+          var(--bg);
+        background-size: 28px 28px, 28px 28px, auto, auto, auto;
+        overflow-x: hidden;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background:
+          linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.035), transparent),
+          repeating-linear-gradient(
+            0deg,
+            rgba(255, 255, 255, 0.025) 0,
+            rgba(255, 255, 255, 0.025) 1px,
+            transparent 1px,
+            transparent 5px
+          );
+        opacity: 0.33;
+        mix-blend-mode: screen;
+      }
+
+      .shell {
+        width: min(1220px, calc(100vw - 32px));
+        margin: 0 auto;
+        padding: 28px 0 48px;
+      }
+
+      .header {
+        min-height: 180px;
+        display: grid;
+        align-items: end;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 24px;
+        padding: 18px 0 26px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .kicker {
+        margin: 0 0 10px;
+        color: var(--amber);
+        font-size: 12px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(30px, 5vw, 64px);
+        line-height: 0.95;
+        letter-spacing: 0;
+      }
+
+      .lead {
+        margin: 16px 0 0;
+        max-width: 720px;
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1.7;
+      }
+
+      .status-strip {
+        min-width: 270px;
+        border: 1px solid var(--line);
+        background: rgba(8, 10, 9, 0.62);
+        box-shadow: var(--shadow);
+      }
+
+      .status-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 16px;
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--line);
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .status-row:last-child {
+        border-bottom: 0;
+      }
+
+      .status-row strong {
+        color: var(--text);
+        font-weight: 700;
+      }
+
+      .pulse-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--green);
+        box-shadow: 0 0 0 0 rgba(136, 209, 138, 0.5);
+        animation: pulse 1.8s infinite;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+        margin-top: 18px;
+      }
+
+      .demo {
+        min-height: 330px;
+        position: relative;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        background:
+          linear-gradient(145deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.008)),
+          var(--panel);
+        box-shadow: var(--shadow);
+      }
+
+      .demo.wide {
+        grid-column: 1 / -1;
+      }
+
+      .demo-head {
+        height: 46px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 0 14px;
+        border-bottom: 1px solid var(--line);
+        background: rgba(7, 9, 8, 0.72);
+      }
+
+      .demo-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .demo-title::before {
+        content: "";
+        width: 6px;
+        height: 18px;
+        background: var(--amber);
+        box-shadow: 0 0 18px rgba(245, 169, 69, 0.4);
+      }
+
+      .demo-note {
+        color: var(--muted);
+        font-size: 11px;
+        white-space: nowrap;
+      }
+
+      .demo-body {
+        position: relative;
+        height: calc(100% - 46px);
+        min-height: 284px;
+        padding: 18px;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 14px;
+      }
+
+      button {
+        height: 32px;
+        border: 1px solid rgba(245, 169, 69, 0.38);
+        border-radius: 4px;
+        color: var(--text);
+        background:
+          linear-gradient(180deg, rgba(245, 169, 69, 0.22), rgba(245, 169, 69, 0.08)),
+          rgba(18, 20, 18, 0.92);
+        padding: 0 12px;
+        font: inherit;
+        font-size: 12px;
+        font-weight: 750;
+        cursor: pointer;
+        transition:
+          transform 140ms ease,
+          border-color 140ms ease,
+          background 140ms ease,
+          box-shadow 140ms ease;
+      }
+
+      button:hover {
+        transform: translateY(-1px);
+        border-color: rgba(245, 169, 69, 0.8);
+        box-shadow: 0 0 0 1px rgba(245, 169, 69, 0.18), 0 10px 26px rgba(0, 0, 0, 0.28);
+      }
+
+      button:active {
+        transform: translateY(0);
+      }
+
+      .board-stage {
+        position: absolute;
+        inset: 0;
+        background:
+          linear-gradient(rgba(136, 209, 138, 0.16) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(136, 209, 138, 0.14) 1px, transparent 1px),
+          radial-gradient(circle at 50% 50%, rgba(245, 169, 69, 0.08), transparent 30%);
+        background-size: 64px 64px, 64px 64px, auto;
+        animation: gridDrift 14s linear infinite;
+      }
+
+      .board-stage::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, transparent, rgba(245, 169, 69, 0.11), transparent);
+        transform: translateX(-100%);
+        animation: sweep 4.8s ease-in-out infinite;
+      }
+
+      .token {
+        position: absolute;
+        left: 52%;
+        top: 52%;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        background:
+          radial-gradient(circle at 36% 28%, #fff2c8, #f5a945 38%, #a44726 100%);
+        border: 2px solid rgba(255, 231, 167, 0.92);
+        box-shadow:
+          0 0 0 6px rgba(245, 169, 69, 0.12),
+          0 0 0 12px rgba(245, 169, 69, 0.04),
+          0 14px 30px rgba(0, 0, 0, 0.46);
+      }
+
+      .token::before,
+      .token::after {
+        content: "";
+        position: absolute;
+        inset: -12px;
+        border-radius: 50%;
+        border: 1px solid rgba(245, 169, 69, 0.66);
+        animation: ring 2.4s ease-out infinite;
+      }
+
+      .token::after {
+        animation-delay: 1.2s;
+      }
+
+      .route-line {
+        position: absolute;
+        left: 24%;
+        top: 34%;
+        width: 42%;
+        height: 32%;
+        border-left: 2px dashed rgba(103, 216, 192, 0.52);
+        border-bottom: 2px dashed rgba(103, 216, 192, 0.52);
+        transform: skew(-8deg);
+        opacity: 0.75;
+      }
+
+      .hud-panel {
+        width: min(360px, 100%);
+        border: 1px solid var(--line);
+        background: rgba(8, 10, 9, 0.66);
+      }
+
+      .hud-row {
+        display: grid;
+        grid-template-columns: 96px 1fr auto;
+        gap: 10px;
+        align-items: center;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--line);
+        font-size: 12px;
+      }
+
+      .hud-row:last-child {
+        border-bottom: 0;
+      }
+
+      .bar {
+        height: 7px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .bar span {
+        display: block;
+        height: 100%;
+        width: var(--value);
+        background: linear-gradient(90deg, var(--green), var(--amber));
+        animation: meterBreath 2.2s ease-in-out infinite;
+      }
+
+      .panel-anim {
+        margin-top: 22px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+      }
+
+      .mini-card {
+        min-height: 74px;
+        padding: 10px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.035);
+        transform: translateY(12px);
+        opacity: 0;
+      }
+
+      .demo.play .mini-card {
+        animation: panelIn 620ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+      }
+
+      .demo.play .mini-card:nth-child(2) {
+        animation-delay: 90ms;
+      }
+
+      .demo.play .mini-card:nth-child(3) {
+        animation-delay: 180ms;
+      }
+
+      .mini-label {
+        color: var(--amber);
+        font-size: 11px;
+        font-weight: 800;
+      }
+
+      .mini-value {
+        margin-top: 8px;
+        font-size: 22px;
+        font-weight: 900;
+      }
+
+      .terminal {
+        position: relative;
+        height: 210px;
+        padding: 18px;
+        border: 1px solid var(--line);
+        background: #070908;
+        overflow: hidden;
+        font-family: "Cascadia Mono", Consolas, monospace;
+        font-size: 12px;
+        line-height: 1.75;
+        color: #b9c8b0;
+      }
+
+      .terminal::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(transparent, rgba(136, 209, 138, 0.12), transparent);
+        height: 34%;
+        transform: translateY(-120%);
+        animation: scan 3.6s linear infinite;
+      }
+
+      .glitch {
+        display: inline-block;
+        position: relative;
+        color: var(--text);
+        font-size: clamp(28px, 5vw, 54px);
+        line-height: 1;
+        font-weight: 950;
+        letter-spacing: 0;
+      }
+
+      .glitch::before,
+      .glitch::after {
+        content: attr(data-text);
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+      }
+
+      .glitch::before {
+        color: var(--cyan);
+      }
+
+      .glitch::after {
+        color: var(--red);
+      }
+
+      .demo.play .glitch::before {
+        animation: glitchA 700ms steps(2, end) 2;
+      }
+
+      .demo.play .glitch::after {
+        animation: glitchB 700ms steps(2, end) 2;
+      }
+
+      .warning-band {
+        margin-top: 20px;
+        padding: 10px 12px;
+        border-left: 3px solid var(--red);
+        background: rgba(231, 87, 69, 0.08);
+        color: #ffc7bf;
+        font-size: 12px;
+        transform-origin: left center;
+      }
+
+      .demo.play .warning-band {
+        animation: alertTap 620ms ease-out;
+      }
+
+      .button-lab {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 18px;
+      }
+
+      .action-button {
+        position: relative;
+        height: 54px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 0 16px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.035);
+        overflow: hidden;
+      }
+
+      .action-button::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, transparent, rgba(245, 169, 69, 0.22), transparent);
+        transform: translateX(-120%);
+      }
+
+      .action-button:hover::after {
+        animation: sweepFast 820ms ease;
+      }
+
+      .action-code {
+        color: var(--amber);
+        font-family: "Cascadia Mono", Consolas, monospace;
+        font-size: 11px;
+      }
+
+      .dice-track {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 8px;
+        margin-top: 28px;
+      }
+
+      .die {
+        height: 76px;
+        display: grid;
+        place-items: center;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.035);
+        color: var(--muted);
+        font-size: 24px;
+        font-weight: 950;
+      }
+
+      .demo.play .die {
+        animation: dieFlip 780ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+      }
+
+      .demo.play .die:nth-child(2) {
+        animation-delay: 80ms;
+      }
+
+      .demo.play .die:nth-child(3) {
+        animation-delay: 160ms;
+      }
+
+      .demo.play .die:nth-child(4) {
+        animation-delay: 240ms;
+      }
+
+      .demo.play .die:nth-child(5) {
+        animation-delay: 320ms;
+      }
+
+      .toast-stack {
+        position: absolute;
+        right: 16px;
+        bottom: 16px;
+        width: min(360px, calc(100% - 32px));
+        display: grid;
+        gap: 8px;
+      }
+
+      .toast {
+        border: 1px solid var(--line);
+        background: rgba(7, 9, 8, 0.9);
+        padding: 12px;
+        transform: translateX(18px);
+        opacity: 0;
+      }
+
+      .demo.play .toast {
+        animation: toastIn 520ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+      }
+
+      .demo.play .toast:nth-child(2) {
+        animation-delay: 110ms;
+      }
+
+      .toast strong {
+        display: block;
+        color: var(--amber);
+        font-size: 12px;
+        margin-bottom: 4px;
+      }
+
+      .toast span {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .motion-guide {
+        margin-top: 18px;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+      }
+
+      .guide-item {
+        min-height: 108px;
+        padding: 14px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.028);
+      }
+
+      .guide-item strong {
+        display: block;
+        color: var(--text);
+        margin-bottom: 8px;
+        font-size: 13px;
+      }
+
+      .guide-item p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.65;
+      }
+
+      @keyframes pulse {
+        70% {
+          box-shadow: 0 0 0 10px rgba(136, 209, 138, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(136, 209, 138, 0);
+        }
+      }
+
+      @keyframes gridDrift {
+        to {
+          background-position: 64px 64px, 64px 64px, center;
+        }
+      }
+
+      @keyframes sweep {
+        0%,
+        45% {
+          transform: translateX(-120%);
+        }
+        68%,
+        100% {
+          transform: translateX(120%);
+        }
+      }
+
+      @keyframes sweepFast {
+        to {
+          transform: translateX(120%);
+        }
+      }
+
+      @keyframes ring {
+        from {
+          transform: scale(0.86);
+          opacity: 0.72;
+        }
+        to {
+          transform: scale(1.34);
+          opacity: 0;
+        }
+      }
+
+      @keyframes meterBreath {
+        50% {
+          filter: brightness(1.35);
+        }
+      }
+
+      @keyframes panelIn {
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      @keyframes scan {
+        to {
+          transform: translateY(320%);
+        }
+      }
+
+      @keyframes glitchA {
+        0%,
+        100% {
+          opacity: 0;
+          transform: translate(0);
+          clip-path: inset(0 0 0 0);
+        }
+        18% {
+          opacity: 0.68;
+          transform: translate(2px, -1px);
+          clip-path: inset(0 0 64% 0);
+        }
+        38% {
+          opacity: 0.5;
+          transform: translate(-2px, 1px);
+          clip-path: inset(48% 0 28% 0);
+        }
+      }
+
+      @keyframes glitchB {
+        0%,
+        100% {
+          opacity: 0;
+          transform: translate(0);
+          clip-path: inset(0 0 0 0);
+        }
+        24% {
+          opacity: 0.62;
+          transform: translate(-2px, 1px);
+          clip-path: inset(68% 0 8% 0);
+        }
+        48% {
+          opacity: 0.45;
+          transform: translate(2px, 0);
+          clip-path: inset(12% 0 58% 0);
+        }
+      }
+
+      @keyframes alertTap {
+        0% {
+          transform: scaleX(1);
+          background: rgba(231, 87, 69, 0.08);
+        }
+        24% {
+          transform: scaleX(1.015);
+          background: rgba(231, 87, 69, 0.22);
+        }
+        100% {
+          transform: scaleX(1);
+          background: rgba(231, 87, 69, 0.08);
+        }
+      }
+
+      @keyframes dieFlip {
+        0% {
+          transform: translateY(10px) rotateX(0);
+          color: var(--muted);
+        }
+        58% {
+          transform: translateY(-8px) rotateX(180deg);
+          color: var(--amber);
+          border-color: rgba(245, 169, 69, 0.72);
+        }
+        100% {
+          transform: translateY(0) rotateX(360deg);
+          color: var(--text);
+          border-color: rgba(245, 169, 69, 0.44);
+        }
+      }
+
+      @keyframes toastIn {
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+
+      @media (max-width: 900px) {
+        .header,
+        .grid,
+        .motion-guide,
+        .button-lab {
+          grid-template-columns: 1fr;
+        }
+
+        .status-strip {
+          min-width: 0;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 1ms !important;
+          animation-iteration-count: 1 !important;
+          scroll-behavior: auto !important;
+          transition: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="header">
+        <div>
+          <p class="kicker">Motion Concepts / ALTS</p>
+          <h1>末日科技风，克制但有生命。</h1>
+          <p class="lead">
+            方向重点：低饱和暗底、少量琥珀警示色、细线 HUD、扫描感、数据噪声、短促反馈。
+            动效不做炫技，尽量像旧设施仍在低功耗运转。
+          </p>
+          <div class="actions">
+            <button data-play-all>播放全部动效</button>
+            <button data-reset>重置</button>
+          </div>
+        </div>
+
+        <aside class="status-strip" aria-label="动效基调">
+          <div class="status-row"><span>系统状态</span><strong>低功耗在线</strong></div>
+          <div class="status-row"><span>视觉温度</span><strong>冷静 / 警戒</strong></div>
+          <div class="status-row"><span>动效节奏</span><span class="pulse-dot"></span></div>
+        </aside>
+      </header>
+
+      <section class="grid">
+        <article class="demo wide play" data-demo>
+          <div class="demo-head">
+            <div class="demo-title">棋盘环境动效</div>
+            <div class="demo-note">适合房间主棋盘常驻背景</div>
+          </div>
+          <div class="demo-body">
+            <div class="board-stage"></div>
+            <div class="route-line"></div>
+            <div class="token"></div>
+          </div>
+        </article>
+
+        <article class="demo" data-demo>
+          <div class="demo-head">
+            <div class="demo-title">面板进入与数据呼吸</div>
+            <div class="demo-note">适合角色卡 / Token 管理</div>
+          </div>
+          <div class="demo-body">
+            <div class="hud-panel">
+              <div class="hud-row"><span>感染指数</span><div class="bar"><span style="--value: 44%"></span></div><strong>44</strong></div>
+              <div class="hud-row"><span>理智余量</span><div class="bar"><span style="--value: 68%"></span></div><strong>68</strong></div>
+              <div class="hud-row"><span>行动热度</span><div class="bar"><span style="--value: 81%"></span></div><strong>81</strong></div>
+            </div>
+            <div class="panel-anim">
+              <div class="mini-card"><div class="mini-label">AP</div><div class="mini-value">04</div></div>
+              <div class="mini-card"><div class="mini-label">SP</div><div class="mini-value">11</div></div>
+              <div class="mini-card"><div class="mini-label">HP</div><div class="mini-value">28</div></div>
+            </div>
+            <div class="actions"><button data-play>重播此组</button></div>
+          </div>
+        </article>
+
+        <article class="demo" data-demo>
+          <div class="demo-head">
+            <div class="demo-title">轻度故障与警告</div>
+            <div class="demo-note">适合失败判定 / 危险状态</div>
+          </div>
+          <div class="demo-body">
+            <div class="glitch" data-text="SIGNAL LOST">SIGNAL LOST</div>
+            <div class="warning-band">源石尘浓度上升，建议立即转入低暴露路线。</div>
+            <div class="terminal" aria-label="终端扫描">
+              <div>&gt; link // rhodes-field-node</div>
+              <div>&gt; packet loss: 07%</div>
+              <div>&gt; terrain map recovered</div>
+              <div>&gt; hostile trace detected</div>
+              <div>&gt; awaiting SN confirmation</div>
+            </div>
+            <div class="actions"><button data-play>触发故障</button></div>
+          </div>
+        </article>
+
+        <article class="demo" data-demo>
+          <div class="demo-head">
+            <div class="demo-title">按钮与操作反馈</div>
+            <div class="demo-note">适合常用命令，不抢戏</div>
+          </div>
+          <div class="demo-body">
+            <div class="button-lab">
+              <div class="action-button"><strong>移动 Token</strong><span class="action-code">ACT-01</span></div>
+              <div class="action-button"><strong>锁定图层</strong><span class="action-code">MAP-LOCK</span></div>
+              <div class="action-button"><strong>投掷骰子</strong><span class="action-code">DICE</span></div>
+              <div class="action-button"><strong>同步房间</strong><span class="action-code">SYNC</span></div>
+            </div>
+            <div class="toast-stack">
+              <div class="toast"><strong>同步完成</strong><span>棋盘状态已写入房间。</span></div>
+              <div class="toast"><strong>权限变更</strong><span>玩家获得临时 Token 控制权。</span></div>
+            </div>
+            <div class="actions"><button data-play>推送提示</button></div>
+          </div>
+        </article>
+
+        <article class="demo" data-demo>
+          <div class="demo-head">
+            <div class="demo-title">骰子 / 判定动效</div>
+            <div class="demo-note">短促、清晰、结果优先</div>
+          </div>
+          <div class="demo-body">
+            <div class="dice-track">
+              <div class="die">D4</div>
+              <div class="die">D6</div>
+              <div class="die">D8</div>
+              <div class="die">D10</div>
+              <div class="die">D20</div>
+            </div>
+            <div class="terminal" style="height: 128px; margin-top: 18px">
+              <div>&gt; roll D20 + 3</div>
+              <div>&gt; entropy stabilized</div>
+              <div>&gt; result: 17</div>
+            </div>
+            <div class="actions"><button data-play>重掷演示</button></div>
+          </div>
+        </article>
+      </section>
+
+      <section class="motion-guide" aria-label="落地建议">
+        <div class="guide-item">
+          <strong>常驻动效</strong>
+          <p>棋盘网格轻微漂移、扫描线、状态灯呼吸。强度低，避免长时间跑团时疲劳。</p>
+        </div>
+        <div class="guide-item">
+          <strong>操作反馈</strong>
+          <p>点击、拖动、锁定、授权用 120 到 220ms 的短反馈，干净利落。</p>
+        </div>
+        <div class="guide-item">
+          <strong>叙事强调</strong>
+          <p>失败、污染、警告可以使用短促 glitch 和红色震荡，但不要持续闪烁。</p>
+        </div>
+        <div class="guide-item">
+          <strong>页面切换</strong>
+          <p>建议用面板遮罩揭示、细线扫描进入，保持科技感但不做大幅度飞入。</p>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const replay = (demo) => {
+        demo.classList.remove("play");
+        void demo.offsetWidth;
+        demo.classList.add("play");
+      };
+
+      document.querySelectorAll("[data-play]").forEach((button) => {
+        button.addEventListener("click", () => replay(button.closest("[data-demo]")));
+      });
+
+      document.querySelector("[data-play-all]").addEventListener("click", () => {
+        document.querySelectorAll("[data-demo]").forEach((demo, index) => {
+          window.setTimeout(() => replay(demo), index * 120);
+        });
+      });
+
+      document.querySelector("[data-reset]").addEventListener("click", () => {
+        document.querySelectorAll("[data-demo]").forEach((demo) => demo.classList.remove("play"));
+      });
+    </script>
+  </body>
+</html>
